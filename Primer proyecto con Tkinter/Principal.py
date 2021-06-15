@@ -1,5 +1,7 @@
 from tkinter import *
 from tkinter import ttk
+from tkinter import messagebox
+import sqlite3
 
 
 raiz = Tk()
@@ -21,6 +23,7 @@ def home():
 
 	
 	products_table.grid(row=1, column=0, columnspan=2)
+	products_table.config(yscrollcommand=scroolbar_text.set)
 
 	# listar los productos cuando los completemos
 
@@ -36,7 +39,7 @@ def home():
 
 	for productos in products:
 		if len(productos) == 3:
-			productos.append("added") # solo se muestran los nuvos campos de la lista y no repiten
+			productos.append("added") # solo se muestran los nuevos campos de la lista y no repiten
 			products_table.insert('',0,text=productos[0],values=(productos[1]))
 
 	# Ocultar pantallas 
@@ -65,7 +68,9 @@ def add():
 
 	add_description_label.grid(row=3, column=0, padx=5, pady=5,sticky=NW)
 	add_description_entry.grid(row=3, column=1, padx=5, pady=5,sticky=W)
-	add_description_entry.config(width=30,height=5,font=("Italy",12),padx=15,pady=15)
+	add_description_entry.config(width=30, height=5, font=("Italy",12), padx=15, pady=15, yscrollcommand=scroolbar_text.set)
+
+	scroolbar_text.grid(column=2,row=3, sticky="nsew")
 
 	boton.grid(row=4,column=1,sticky=N)
 
@@ -90,6 +95,15 @@ def add_products():
 		name_data.get(),
 		price_data.get(),
 		add_description_entry.get("1.0", "end-1c")]) # ponemos asi para que nos retorne Text
+
+	# introducimos los productos dentro de la bbdd
+	miconexion = sqlite3.connect("Productos")
+	elcursor = miconexion.cursor()
+	elcursor.execute("INSERT INTO Productos_Tienda VALUES(NULL,'" + name_data.get() + "','" + price_data.get() + "','" + add_description_entry.get("1.0", END) + "')")
+	miconexion.commit()
+	messagebox.showinfo("Producto", "Se ha registrado correactamente el producto en la bbdd")
+
+
 
 	name_data.set("")
 	price_data.set("")
@@ -120,6 +134,25 @@ def info():
 
 	return True
 
+# creacion de la bbdd
+def basedatos():
+
+	conexion = sqlite3.connect("Productos")
+
+	cursor = conexion.cursor()
+
+	try:
+		cursor.execute('''
+			CREATE TABLE Productos_Tienda(
+			ID INTEGER PRIMARY KEY AUTOINCREMENT,
+			NOMBRE_PRODUCTO VARCHAR(70),
+			PRECIO VARCHAR(10),
+			DESCRIPCION VARCHAR(150))''')
+
+		mensaje = messagebox.showinfo("BASE DE DATOS", "Se ha creado con exito la base de datos")
+
+	except:
+		mensaje2 = messagebox.showwarning("BASE DE DATOS", "Ya se encuentra existente la base de datos")
 
 # campos de cada campo de pantallas
 principal_label = Label(raiz, text="Inicio")
@@ -135,7 +168,6 @@ name_data = StringVar()
 price_data = StringVar()
 
 # campos para formulario
-
 agregar_frame = Frame(raiz)
 
 # Nombre producto
@@ -150,7 +182,9 @@ add_price_entry = Entry(agregar_frame,textvariable= price_data)
 # descripcion del producto
 add_description_label = Label(agregar_frame, text="Descripcion:")
 add_description_entry = Text(agregar_frame)
+scroolbar_text = Scrollbar(agregar_frame,command=add_description_entry.yview)
 
+boton= Button(agregar_frame,text="Guardar producto", command=add_products)
 boton= Button(agregar_frame,text="Guardar producto", command=add_products)
 
 
@@ -181,9 +215,11 @@ home()
 #Menu 
 menu = Menu(raiz)
 menu.add_command(label = "Inicio", command=home)
+menu.add_command(label = "conectar bbdd", command=basedatos)
 menu.add_command(label = "Añadir productos", command=add)
 menu.add_command(label = "Acerca de", command=info)
 menu.add_command(label = "Salir", command = raiz.quit) 
+
 
 #Introducir el menu dentro de la raiz
 raiz.config(menu=menu)
